@@ -12,14 +12,14 @@ class Environment {
     static Scanner in = new Scanner(System.in);
     static LinkedList<String> inputPool = new LinkedList<>();
 
-    static String nextParameter() throws InvalidCommand, InvalidName {
+    static String nextParameter() {
         while(cmdQueue.isEmpty()) {
             Environment.run();
         }
         return cmdQueue.pop().substring(1);
     }
     private Environment() {}
-    public static void run() throws InvalidCommand, InvalidName {
+    public static void run() {
         String cmd = next();
         boolean flag = false;
         cmdQueue.addLast(cmd);
@@ -42,12 +42,13 @@ class Environment {
                 StringBuffer buffer = new StringBuffer();
                 buffer.append(s);
                 int bracketsRemainUnclosed = 1;
-                do {
+                if(s.charAt(s.length()-1) == ']') bracketsRemainUnclosed--;
+                while(bracketsRemainUnclosed > 0) {
                     s = next();
                     buffer.append(" " + s);
                     if(s.charAt(0) == '[') bracketsRemainUnclosed++;
                     if(s.charAt(s.length()-1) == ']') bracketsRemainUnclosed--;
-                }while(bracketsRemainUnclosed > 0);
+                }
                 cmdQueue.addFirst("\"" + buffer.toString());
             }
             else if(s.matches("(-)?[0-9]\\d*\\.?\\d*")) {
@@ -84,9 +85,9 @@ class Environment {
     }
 }
 
-class InvalidName extends Exception {
+class InvalidName extends RuntimeException {
     private static final long serialVersionUID = -8786244584248138482L;
 }
-class InvalidCommand extends Exception {
+class InvalidCommand extends RuntimeException {
     private static final long serialVersionUID = 4684561830530738704L;  
 }

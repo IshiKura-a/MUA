@@ -29,6 +29,8 @@ public class MuaList extends ArrayList<Object>{
 
     public static MuaList parseMuaList(String listContent) {
         MuaList list = new MuaList();
+        if(listContent.charAt(0) != '[' && listContent.charAt(listContent.length()-1) != ']')
+            throw new MuaListFormatException();
         listContent = listContent.substring(1, listContent.length() - 1);
         
         StringBuffer listElement = new StringBuffer();
@@ -53,4 +55,8 @@ public class MuaList extends ArrayList<Object>{
 
         return list;
     }
+}
+
+class MuaListFormatException extends RuntimeException {
+    private static final long serialVersionUID = 2630149395941128696L; 
 }
