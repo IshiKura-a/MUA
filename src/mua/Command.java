@@ -1,7 +1,5 @@
 package mua;
 
-import java.text.spi.NumberFormatProvider;
-
 public enum Command {
     MAKE ("make") {
         public String apply() {
@@ -99,7 +97,7 @@ public enum Command {
                 while(Environment.hasNext()) {
                     Environment.run();
                 }
-                res = Environment.cmdQueue.pop();
+                res = Environment.paramQueue.pop();
             }
             return res.substring(1);
         }
@@ -201,7 +199,19 @@ public enum Command {
     ISWORD("isword") {
         public String apply() {
             String val = Environment.nextParameter();
-            return TRUESTRING;
+            try {
+                Double.parseDouble(val);
+                return FALSESTRING;
+            }
+            catch(NumberFormatException e) {
+                try {
+                    MuaList.parseMuaList(val);
+                    return FALSESTRING;
+                }
+                catch(MuaListFormatException ee) {
+                    return TRUESTRING;
+                }
+            }
         }
     },
     IF("if") {
@@ -224,7 +234,7 @@ public enum Command {
             while (Environment.hasNext()) {
                 Environment.run();
             }
-            res = Environment.cmdQueue.pop();
+            res = Environment.paramQueue.pop();
             return res.substring(1);
         }
     };

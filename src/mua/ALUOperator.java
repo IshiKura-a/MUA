@@ -33,19 +33,7 @@ public enum ALUOperator {
         return null;
     }
 
-    public static Double calculate(String expression) {
-        Stack<ALUOperator> operator = new Stack<>();
-        Stack<Double> operand = new Stack<>();
-        Stack<Command> prefixOperator = new Stack<>();
-
-        String prefixOperatorPattern = "(add|mul|sub|div|mod)";
-
-        for(String item: expression.split("[\\b]")) {
-            if(item.matches(prefixOperatorPattern)) {
-                prefixOperator.add(Command.get(item));
-            }
-        }
-
+    public static Double calculate(String expression, Stack<ALUOperator> operator, Stack<Double> operand) {
         int i;
         char c;
         char prevC = '=';
@@ -74,6 +62,17 @@ public enum ALUOperator {
                     }
                     if(o != RBRACKET) operator.push(o);
                 }
+            }
+            else if(c == ':') {
+                int j = i+1;
+                while(j < expression.length() && !expression.substring(j,j+1).matches("[a-zA-Z0-9_]")) {
+                    j++;
+                }
+                String name = expression.substring(i,j);
+                String nameContent = Environment.nameMap.get(name).toString();
+                operand.push(Double.parseDouble(nameContent));
+                i = j-1;
+
             }
             else {
                 int j = i+1;
