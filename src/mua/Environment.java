@@ -3,7 +3,6 @@ package mua;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Scanner;
-import java.util.Stack;
 
 class Environment {
     static Scanner in = new Scanner(System.in);

@@ -271,6 +271,14 @@ public enum Command {
             MuaList argList = MuaList.parseMuaList(funcList.get(0));
             MuaList runList = MuaList.parseMuaList(funcList.get(1));
 
+            if (argList.isEmpty()) {
+                if (runList.isEmpty()) {
+                    return "[]";
+                } else if (runList.size() == 1) {
+                    return runList.get(0);
+                }
+            }
+
             HashMap<String, String> curNameMap = new HashMap<>();
             for (String s : argList) {
                 String res = Environment.nextParameter();
@@ -286,10 +294,10 @@ public enum Command {
             Environment.allocateNewParameterQ();
             Environment.contextReturnVal.push("");
 
-            boolean hasReturnValue = false;
+            // boolean hasReturnValue = false;
             for (String s : runList.toArray(new String[1])) {
-                if (!hasReturnValue && s.matches(".*return.*"))
-                    hasReturnValue = true;
+                // if (!hasReturnValue && s.matches(".*return.*"))
+                // hasReturnValue = true;
                 Environment.push2CurInputPool(s);
             }
             while (Environment.hasNextInPool()) {
@@ -301,7 +309,8 @@ public enum Command {
             Environment.removeCurCommandStack();
             Environment.removeCurInputPool();
             Environment.removeCurNameMap();
-            return hasReturnValue ? res : "";
+            // return hasReturnValue ? res : "";
+            return res;
         }
     },
     RETURN("return", 1) {

@@ -33,28 +33,39 @@ public class MuaList extends ArrayList<String> {
             throw new MuaListFormatException();
         listContent = listContent.substring(1, listContent.length() - 1);
 
-        StringBuffer listElement = new StringBuffer();
+        StringBuilder listElement = new StringBuilder();
         int isInList = 0;
         for (String s : listContent.split("[\\s]")) {
             if (s.matches("[\\s]*"))
                 continue;
             if (isInList != 0) {
-                listElement.append(" " + s);
-                isInList += Environment.countBracket(s);
-                if (isInList == 0)
-                    list.add(listElement.toString());
+                listElement.append(" ");
+                isInList = countBracket(list, s, listElement, isInList);
             } else if (s.charAt(0) != '[') {
                 list.add(s);
             } else {
-                isInList += Environment.countBracket(s);
-                listElement = new StringBuffer();
-                listElement.append(s);
-                if (isInList == 0)
-                    list.add(listElement.toString());
+                listElement.delete(0, listElement.length());
+                isInList = countBracket(list, s, listElement, isInList);
             }
         }
 
         return list;
+    }
+
+    private static int countBracket(MuaList list, String s, StringBuilder listElement, int isInList) {
+        for (char c : s.toCharArray()) {
+            if (c == '[') {
+                isInList++;
+            } else if (c == ']') {
+                isInList--;
+            }
+            listElement.append(Character.toString(c));
+            if (isInList == 0) {
+                list.add(listElement.toString());
+                listElement.delete(0, listElement.length());
+            }
+        }
+        return isInList;
     }
 }
 
