@@ -6,19 +6,19 @@ import java.util.Scanner;
 import java.util.Stack;
 
 class Environment {
-    static HashMap<String, Object> nameMap = new HashMap<>();
-    static LinkedList<String> paramQueue = new LinkedList<>();
-    static Stack<Command> cmdStack = new Stack<>();
     static Scanner in = new Scanner(System.in);
-    static LinkedList<String> inputPool = new LinkedList<>();
-    static Stack<HashMap<String, Object>> contextNameMap = new Stack<>();
-    static Stack<LinkedList<String>> contextInputPool = new Stack<>();
+    static LinkedList<LinkedList<Command>> contextCommandStack = new LinkedList<>();
+    static LinkedList<HashMap<String, String>> contextNameMap = new LinkedList<>();
+    static LinkedList<LinkedList<String>> contextInputPool = new LinkedList<>();
+    static LinkedList<LinkedList<String>> contextParameterQ = new LinkedList<>();
+    static LinkedList<String> contextReturnVal = new LinkedList<>();
 
-    static String nextParameter() {
-        while (paramQueue.isEmpty()) {
-            Environment.run();
-        }
-        return paramQueue.pop().substring(1);
+    public static void init() {
+        contextReturnVal.push("");
+        contextParameterQ.add(new LinkedList<>());
+        contextCommandStack.add(new LinkedList<>());
+        contextNameMap.add(new HashMap<>());
+        contextInputPool.add(new LinkedList<>());
     }
 
     private Environment() {
@@ -26,87 +26,98 @@ class Environment {
 
     public static void run() {
         String s = next();
-        // String cmd = next();
         boolean flag = false;
-        // paramQueue.addLast(cmd);
-        // String s = paramQueue.removeFirst();
         Command c = Command.get(s);
         if (c != null) {
-            cmdStack.push(c);
+            push2CurCommandStack(c);
             flag = true;
         } else {
             if (s.charAt(0) == ':') {
-                cmdStack.push(Command.THING);
-                paramQueue.addFirst("\"" + s.substring(1));
+                push2CurCommandStack(Command.THING);
+                contextParameterQ.peek().addFirst("\"" + s.substring(1));
                 flag = true;
             } else if (s.charAt(0) == '\"') {
-                paramQueue.addFirst(s);
+                contextParameterQ.peek().addFirst(s);
             } else if (s.charAt(0) == '[') {
-                addList2Queue(s);
+                addList2ParameterQ(s);
             } else if (s.charAt(0) == '(') {
-                paramQueue.addFirst("\"" + executeInfixStatement(readExpressionWithBracket(s)));
+                contextParameterQ.peek().addFirst("\"" + executeInfixStatement(readExpressionWithBracket(s)));
             } else if (s.matches("(-)?[0-9]\\d*\\.?\\d*")) {
-                paramQueue.addFirst("\"" + s);
+                contextParameterQ.peek().addFirst("\"" + s);
             } else if (s.matches("(true)|(false)")) {
-                paramQueue.addFirst("\"" + s);
+                contextParameterQ.peek().addFirst("\"" + s);
             } else {
-                cmdStack.push(Command.FUNC);
-                paramQueue.addFirst("\"" + nameMap.get(s));
+                push2CurCommandStack(Command.FUNC);
+                contextParameterQ.peek().addFirst("\"" + getNameContent(s));
                 flag = true;
             }
         }
-        if (!cmdStack.empty() && flag) {
-            String res = cmdStack.peek().apply();
-            cmdStack.pop();
-            if (!cmdStack.isEmpty() && !res.isEmpty()) {
-                paramQueue.addFirst("\"" + res);
-            }
+        if (!contextCommandStack.peek().isEmpty() && flag) {
+            String res = contextCommandStack.peek().getLast().apply();
+            contextCommandStack.peek().removeLast();
+            if (!contextCommandStack.peek().isEmpty()) {
+                contextParameterQ.peek().addFirst("\"" + res);
+            } else
+                contextReturnVal.set(0, res);
         }
     }
 
-    public static boolean hasNext() {
-        return !inputPool.isEmpty() || (!contextInputPool.isEmpty() && !contextInputPool.peek().isEmpty());
+    public static boolean hasNextInPool() {
+        return !contextInputPool.peek().isEmpty();
     }
 
     public static String next() {
-        if (contextInputPool.isEmpty()) {
-            if (inputPool.isEmpty()) {
-                return in.next();
-            } else {
-                return inputPool.pop();
-            }
-        } else {
+        if (contextInputPool.peek().isEmpty()) {
+            return in.next();
+        } else
             return contextInputPool.peek().pop();
-        }
-
     }
 
-    public static void appendGlobal(String element) {
-        inputPool.add(element);
+    public static void allocateNewCommandStack() {
+        contextCommandStack.push(new LinkedList<>());
     }
 
-    public static void push2CurContextInputPool(String element) {
-        contextInputPool.peek().push(element);
+    public static void push2CurCommandStack(Command c) {
+        contextCommandStack.peek().add(c);
     }
 
-    public static void allocateNewContextInputPool() {
+    public static void removeCurCommandStack() {
+        contextCommandStack.pop();
+    }
+
+    public static void allocateNewInputPool() {
         contextInputPool.push(new LinkedList<>());
     }
 
-    public static boolean hasNextInContextInputPool() {
-        return !contextInputPool.isEmpty() && !contextInputPool.peek().isEmpty();
+    public static void push2CurInputPool(String element) {
+        contextInputPool.peek().add(element);
     }
 
-    public static void clearCurContextInputPool() {
+    public static void clearCurInputPool() {
         contextInputPool.peek().clear();
     }
 
-    public static void removeCurContextInputPool() {
+    public static void removeCurInputPool() {
         contextInputPool.pop();
     }
 
-    public static void removeCurContextNameMap() {
+    public static void removeCurNameMap() {
         contextNameMap.pop();
+    }
+
+    public static void allocateNewParameterQ() {
+        contextParameterQ.push(new LinkedList<>());
+    }
+
+    public static void removeCurParameterQ() {
+        contextParameterQ.pop();
+    }
+
+    public static String nextParameter() {
+        while (contextParameterQ.peek().isEmpty()) {
+            Environment.run();
+        }
+        return contextParameterQ.peek().pop().substring(1);
     }
 
     public static int countBracket(String s) {
@@ -121,7 +132,16 @@ class Environment {
         return bracketsRemainUnclosed;
     }
 
-    public static void addList2Queue(String s) {
+    public static String getNameContent(String key) {
+        String res;
+        if ((res = contextNameMap.peek().get(key)) != null || (res = contextNameMap.getLast().get(key)) != null) {
+            return res;
+        } else {
+            throw new InvalidName();
+        }
+    }
+
+    public static void addList2ParameterQ(String s) {
         StringBuffer buffer = new StringBuffer();
 
         buffer.append(s);
@@ -132,7 +152,7 @@ class Environment {
             buffer.append(" " + s);
             bracketsRemainUnclosed += countBracket(s);
         }
-        paramQueue.addFirst("\"" + buffer.toString());
+        contextParameterQ.peek().addFirst("\"" + buffer.toString());
     }
 
     public static String readExpressionWithBracket(String s) {
@@ -159,10 +179,10 @@ class Environment {
     }
 
     public static String executeInfixStatement(String expression) {
-        Stack<ALUOperator> operator = new Stack<>();
-        Stack<Double> operand = new Stack<>();
-        Stack<Command> prefixOp = new Stack<>();
-        Stack<StackInfo> inStack = new Stack<>();
+        LinkedList<ALUOperator> operator = new LinkedList<>();
+        LinkedList<Double> operand = new LinkedList<>();
+        LinkedList<CommandInfo> prefixOp = new LinkedList<>();
+        LinkedList<StackInfo> inStack = new LinkedList<>();
 
         boolean isNeg = false;
         char prevC = '=';
@@ -199,12 +219,7 @@ class Environment {
                     j++;
                 }
                 String name = expression.substring(i + 1, j);
-                String nameContent = null;
-                if (!contextNameMap.isEmpty()) {
-                    nameContent = (String) contextNameMap.peek().get(name);
-                }
-                if (nameContent == null)
-                    nameContent = nameMap.get(name).toString();
+                String nameContent = getNameContent(name);
                 operand.push(Double.parseDouble(nameContent));
                 i = j - 1;
             } else if (Character.isLetter(c)) {
@@ -215,8 +230,15 @@ class Environment {
 
                 String command = expression.substring(i, j);
                 Command cmd = Command.get(command);
+                if (cmd == null) {
+                    contextParameterQ.peek().addFirst("\"" + getNameContent(command));
+                    cmd = Command.FUNC;
+                }
                 inStack.push(new StackInfo(operator.size(), operand.size()));
-                prefixOp.push(cmd);
+                prefixOp.push(new CommandInfo(cmd,
+                        cmd == Command.FUNC
+                                ? MuaList.parseMuaList(MuaList.parseMuaList(getNameContent(command)).get(0)).size()
+                                : cmd.getOpNeed()));
 
                 i = j - 1;
             } else if (Character.isDigit(c)) {
@@ -228,20 +250,18 @@ class Environment {
                 res = isNeg ? -res : res;
                 operand.push(res);
                 i = j - 1;
-
-                if (!prefixOp.isEmpty() && operand.size() == inStack.peek().nOperand + 2
-                        && operator.size() == inStack.peek().nOperator) {
-                    inStack.pop();
-                    Double rVal = operand.pop();
-                    Double lVal = operand.pop();
-
-                    Environment.inputPool.push(lVal.toString());
-                    Environment.inputPool.push(rVal.toString());
-                    operand.push(Double.parseDouble(prefixOp.pop().apply()));
-                }
             }
             prevC = c;
             isNeg = false;
+
+            if (!prefixOp.isEmpty() && operand.size() == inStack.peek().nOperand + prefixOp.peek().opNeed
+                    && operator.size() == inStack.peek().nOperator) {
+                inStack.pop();
+                for (int cnt = 0; cnt < prefixOp.peek().opNeed; cnt++) {
+                    Environment.push2CurInputPool(operand.pop().toString());
+                }
+                operand.push(Double.parseDouble(prefixOp.pop().cmd.apply()));
+            }
         }
 
         return operand.pop().toString();

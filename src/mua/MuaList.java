@@ -2,15 +2,15 @@ package mua;
 
 import java.util.ArrayList;
 
-public class MuaList extends ArrayList<Object> {
+public class MuaList extends ArrayList<String> {
     private static final long serialVersionUID = 6778385261416856263L;
 
     @Override
     public String toString() {
         StringBuilder res = new StringBuilder();
         res.append("[");
-        for (Object o : super.toArray()) {
-            res.append(o.toString() + " ");
+        for (String s : super.toArray(new String[1])) {
+            res.append(s + " ");
         }
         res.replace(res.length() - 1, res.length(), "]");
         return res.toString();
@@ -36,6 +36,8 @@ public class MuaList extends ArrayList<Object> {
         StringBuffer listElement = new StringBuffer();
         int isInList = 0;
         for (String s : listContent.split("[\\s]")) {
+            if (s.matches("[\\s]*"))
+                continue;
             if (isInList != 0) {
                 listElement.append(" " + s);
                 isInList += Environment.countBracket(s);

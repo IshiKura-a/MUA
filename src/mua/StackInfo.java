@@ -4,7 +4,7 @@ public class StackInfo {
     int nOperator;
     int nOperand;
 
-    StackInfo(int nOperator, int nOperand) {
+    public StackInfo(int nOperator, int nOperand) {
         this.nOperand = nOperand;
         this.nOperator = nOperator;
     }

@@ -3,121 +3,133 @@ package mua;
 import java.util.HashMap;
 
 public enum Command {
-    MAKE("make") {
+    MAKE("make", 2) {
         public String apply() {
             String key = Environment.nextParameter();
             String value = Environment.nextParameter();
             if (key.matches("^[_a-zA-Z]\\w*")) {
-                Environment.nameMap.put(key, value);
+                Environment.contextNameMap.peek().put(key, value);
                 return value;
             } else {
                 throw new InvalidName();
             }
         }
     },
-    THING("thing") {
+    THING("thing", 1) {
         public String apply() {
             String name = Environment.nextParameter();
-            String nameContent = null;
-            if (!Environment.contextNameMap.isEmpty()) {
-                nameContent = (String) Environment.contextNameMap.peek().get(name);
-            }
-            if (nameContent == null)
-                nameContent = Environment.nameMap.get(name).toString();
-            return nameContent;
+            return Environment.getNameContent(name);
         }
     },
-    READ("read") {
+    READ("read", 0) {
         public String apply() {
             return Environment.in.next();
         }
     },
-    PRINT("print") {
+    PRINT("print", 1) {
         public String apply() {
             String value = Environment.nextParameter();
             System.out.println(value);
             return value;
         }
     },
-    ADD("add") {
+    ADD("add", 2) {
         public String apply() {
             double lVal = Double.parseDouble(Environment.nextParameter());
             double rVal = Double.parseDouble(Environment.nextParameter());
             return Double.toString(lVal + rVal);
         }
     },
-    SUB("sub") {
+    SUB("sub", 2) {
         public String apply() {
             double lVal = Double.parseDouble(Environment.nextParameter());
             double rVal = Double.parseDouble(Environment.nextParameter());
             return Double.toString(lVal - rVal);
         }
     },
-    MUL("mul") {
+    MUL("mul", 2) {
         public String apply() {
             double lVal = Double.parseDouble(Environment.nextParameter());
             double rVal = Double.parseDouble(Environment.nextParameter());
             return Double.toString(lVal * rVal);
         }
     },
-    DIV("div") {
+    DIV("div", 2) {
         public String apply() {
             double lVal = Double.parseDouble(Environment.nextParameter());
             double rVal = Double.parseDouble(Environment.nextParameter());
             return Double.toString(lVal / rVal);
         }
     },
-    MOD("mod") {
+    MOD("mod", 2) {
         public String apply() {
             double lVal = Double.parseDouble(Environment.nextParameter());
             double rVal = Double.parseDouble(Environment.nextParameter());
             return Double.toString(lVal % rVal);
         }
     },
-    ERASE("erase") {
+    ERASE("erase", 1) {
         public String apply() {
-            return Environment.nameMap.remove(Environment.nextParameter()).toString();
+            String key = Environment.nextParameter();
+            String res = null;
+            if ((res = Environment.contextNameMap.peek().remove(key)) != null) {
+                return res;
+            } else if ((res = Environment.contextNameMap.getLast().remove(key)) != null) {
+                return res;
+            } else
+                throw new InvalidName();
+
         }
     },
-    ISNAME("isname") {
+    ISNAME("isname", 1) {
         public String apply() {
-            Boolean res = Environment.nameMap.containsKey(Environment.nextParameter());
+            String key = Environment.nextParameter();
+            Boolean res = Environment.contextNameMap.peek().containsKey(key)
+                    || Environment.contextNameMap.getLast().containsKey(key);
             return res.toString();
         }
     },
-    READLIST("readlist") {
+    READLIST("readlist", 0) {
         public String apply() {
             MuaList list = new MuaList();
             list.readlist();
             return list.toString();
         }
     },
-    RUN("run") {
+    RUN("run", 1) {
         public String apply() {
-            int noRepeat = 1;
             MuaList list = MuaList.parseMuaList(Environment.nextParameter());
 
-            int i;
             String res = "";
-            for (i = 1; i <= noRepeat; i++) {
-                for (Object o : list.toArray()) {
-                    Environment.appendGlobal(o.toString());
-                }
-                while (Environment.hasNext()) {
-                    Environment.run();
-                }
-                res = Environment.paramQueue.pop();
+            Environment.allocateNewInputPool();
+            Environment.allocateNewCommandStack();
+            Environment.contextReturnVal.push("");
+            for (String s : list.toArray(new String[1])) {
+                Environment.push2CurInputPool(s);
             }
-            return res.substring(1);
+            while (Environment.hasNextInPool()) {
+                Environment.run();
+            }
+            res = Environment.contextReturnVal.pop();
+            Environment.removeCurCommandStack();
+            Environment.removeCurInputPool();
+            return res;
         }
     },
-    EQ("eq") {
+    EQ("eq", 2) {
         public String apply() {
-            Boolean res = Environment.nextParameter().compareTo(Environment.nextParameter()) == 0;
-            return res.toString();
+            String lVal = Environment.nextParameter();
+            String rVal = Environment.nextParameter();
+            try {
+                double lNumber = Double.parseDouble(lVal);
+                double rNumber = Double.parseDouble(rVal);
+                return Boolean.toString(lNumber == rNumber);
+            } catch (NumberFormatException e) {
+                return lVal.compareTo(rVal) == 0 ? TRUESTRING : FALSESTRING;
+            }
         }
     },
-    GT("gt") {
+    GT("gt", 2) {
         public String apply() {
             String lVal = Environment.nextParameter();
             String rVal = Environment.nextParameter();
@@ -132,7 +144,7 @@ public enum Command {
 
         }
     },
-    LT("lt") {
+    LT("lt", 2) {
         public String apply() {
             String lVal = Environment.nextParameter();
             String rVal = Environment.nextParameter();
@@ -146,27 +158,27 @@ public enum Command {
             }
         }
     },
-    AND("and") {
+    AND("and", 2) {
         public String apply() {
             boolean lVal = Boolean.parseBoolean(Environment.nextParameter());
             boolean rVal = Boolean.parseBoolean(Environment.nextParameter());
             return Boolean.toString(lVal && rVal);
         }
     },
-    OR("or") {
+    OR("or", 2) {
         public String apply() {
             boolean lVal = Boolean.parseBoolean(Environment.nextParameter());
             boolean rVal = Boolean.parseBoolean(Environment.nextParameter());
             return Boolean.toString(lVal || rVal);
         }
     },
-    NOT("not") {
+    NOT("not", 1) {
         public String apply() {
             boolean lVal = Boolean.parseBoolean(Environment.nextParameter());
             return Boolean.toString(!lVal);
         }
     },
-    ISNUMBER("isnumber") {
+    ISNUMBER("isnumber", 1) {
         public String apply() {
             try {
                 Double.parseDouble(Environment.nextParameter());
@@ -176,7 +188,7 @@ public enum Command {
             return TRUESTRING;
         }
     },
-    ISLIST("islist") {
+    ISLIST("islist", 1) {
         public String apply() {
             try {
                 MuaList.parseMuaList(Environment.nextParameter());
@@ -186,14 +198,14 @@ public enum Command {
             return TRUESTRING;
         }
     },
-    ISBOOL("isbool") {
+    ISBOOL("isbool", 1) {
         public String apply() {
             String val = Environment.nextParameter();
             val = val.toLowerCase();
             return val.matches("(true|false)") ? TRUESTRING : FALSESTRING;
         }
     },
-    ISEMPTY("isempty") {
+    ISEMPTY("isempty", 1) {
         public String apply() {
             String val = Environment.nextParameter();
             if (val.compareTo("") == 0 || val.compareTo("[]") == 0)
@@ -202,7 +214,7 @@ public enum Command {
                 return FALSESTRING;
         }
     },
-    ISWORD("isword") {
+    ISWORD("isword", 1) {
         public String apply() {
             String val = Environment.nextParameter();
             try {
@@ -218,7 +230,7 @@ public enum Command {
             }
         }
     },
-    IF("if") {
+    IF("if", 3) {
         public String apply() {
             Boolean cond = Boolean.parseBoolean(Environment.nextParameter());
             MuaList trueList = MuaList.parseMuaList(Environment.nextParameter());
@@ -228,79 +240,97 @@ public enum Command {
             if (list.isEmpty()) {
                 return "[]";
             }
-            if (list.size() == 1 && Command.get(list.get(0).toString()) == null) {
-                return list.get(0).toString();
+            if (list.size() == 1 && Command.get(list.get(0)) == null) {
+                return list.get(0);
             }
+
             String res = "";
-            for (Object o : list.toArray()) {
-                Environment.appendGlobal(o.toString());
+            Environment.allocateNewInputPool();
+            Environment.allocateNewCommandStack();
+            Environment.allocateNewParameterQ();
+            Environment.contextReturnVal.push("");
+            for (String s : list.toArray(new String[1])) {
+                Environment.push2CurInputPool(s);
             }
-            while (Environment.hasNext()) {
+            while (Environment.hasNextInPool()) {
                 Environment.run();
             }
-            res = Environment.paramQueue.pop();
-            return res.substring(1);
+
+            res = Environment.contextReturnVal.peek();
+            Environment.removeCurParameterQ();
+            Environment.removeCurCommandStack();
+            Environment.removeCurInputPool();
+            return res;
         }
     },
-    FUNC("func") {
+    FUNC("func", 0) {
         public String apply() {
             MuaList funcList = MuaList.parseMuaList(Environment.nextParameter());
             if (funcList.size() != 2)
                 throw new InvalidFunction();
-            MuaList argList = MuaList.parseMuaList(funcList.get(0).toString());
-            MuaList runList = MuaList.parseMuaList(funcList.get(1).toString());
+            MuaList argList = MuaList.parseMuaList(funcList.get(0));
+            MuaList runList = MuaList.parseMuaList(funcList.get(1));
 
-            HashMap<String, Object> curNameMap = new HashMap<>();
-            for (Object o : argList) {
+            HashMap<String, String> curNameMap = new HashMap<>();
+            for (String s : argList) {
                 String res = Environment.nextParameter();
-                if (((String) o).matches("^[_a-zA-Z]\\w*")) {
-                    curNameMap.put((String) o, res);
+                if (s.matches("^[_a-zA-Z]\\w*")) {
+                    curNameMap.put(s, res);
                 } else
                     throw new InvalidName();
             }
 
             Environment.contextNameMap.push(curNameMap);
+            Environment.allocateNewInputPool();
+            Environment.allocateNewCommandStack();
+            Environment.allocateNewParameterQ();
+            Environment.contextReturnVal.push("");
 
-            Environment.allocateNewContextInputPool();
             boolean hasReturnValue = false;
-            for (Object o : runList.toArray()) {
-                if (!hasReturnValue && ((String) o).compareTo("return") == 0)
+            for (String s : runList.toArray(new String[1])) {
+                if (!hasReturnValue && s.matches(".*return.*"))
                     hasReturnValue = true;
-                Environment.push2CurContextInputPool(o.toString());
+                Environment.push2CurInputPool(s);
             }
-            while (Environment.hasNextInContextInputPool()) {
+            while (Environment.hasNextInPool()) {
                 Environment.run();
             }
-            String res = Environment.paramQueue.pop();
 
-            return hasReturnValue ? res.substring(1) : "";
+            String res = Environment.contextReturnVal.peek();
+            Environment.removeCurParameterQ();
+            Environment.removeCurCommandStack();
+            Environment.removeCurInputPool();
+            Environment.removeCurNameMap();
+            return hasReturnValue ? res : "";
         }
     },
-    RETURN("return") {
+    RETURN("return", 1) {
         public String apply() {
-            Environment.clearCurContextInputPool();
-            return Environment.nextParameter();
+            String res = Environment.nextParameter();
+            Environment.clearCurInputPool();
+            return res;
         }
     },
-    EXPORT("export") {
+    EXPORT("export", 1) {
         public String apply() {
-            String key = (String) Environment.nextParameter();
-            Object val;
-            if (!Environment.contextNameMap.isEmpty() && (val = Environment.contextNameMap.peek().get(key)) != null) {
-                Environment.nameMap.put(key, val);
-            } else {
-                throw new InvalidCommand();
-            }
-            return val.toString();
+            String key = Environment.nextParameter();
+            if (Environment.contextNameMap.peek().get(key) == null)
+                throw new InvalidName();
+
+            String val = Environment.contextNameMap.peek().get(key);
+            Environment.contextNameMap.getLast().put(key, val);
+            return val;
         }
     };
 
     private final String cmd;
+    private final int opNeed;
     private static final String TRUESTRING = "true";
     private static final String FALSESTRING = "false";
 
-    private Command(String cmd) {
+    private Command(String cmd, int opNeed) {
         this.cmd = cmd;
+        this.opNeed = opNeed;
     }
 
     public abstract String apply();
@@ -312,5 +342,9 @@ public enum Command {
             }
         }
         return null;
+    }
+
+    public int getOpNeed() {
+        return opNeed;
     }
 }

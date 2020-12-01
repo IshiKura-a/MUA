@@ -3,16 +3,49 @@ package mua;
 import java.util.Stack;
 
 public enum ALUOperator {
-    PLUS (3, 2, '+') { double eval(double x, double y) { return x+y;} },
-    MINUS (3, 2, '-'){ double eval(double x, double y) { return y-x;} },
-    MULTIPLE (5, 4, '*') { double eval(double x, double y) { return x*y;} },
-    DIVIDE (5, 4, '/') { double eval(double x, double y) { return y/x;} },
-    MODULE (5, 4, '%') { double eval(double x, double y) { return y%x;} },
-    LBRACKET (1, 6, '(') { double eval(double x, double y) { return 0;} },
-    RBRACKET (6, 1, ')') { double eval(double x, double y) { return 0;} },
-    EQUAL (0, 0, '=') { double eval(double x, double y) { return 0;} };
+    PLUS(3, 2, '+') {
+        double eval(double x, double y) {
+            return x + y;
+        }
+    },
+    MINUS(3, 2, '-') {
+        double eval(double x, double y) {
+            return y - x;
+        }
+    },
+    MULTIPLE(5, 4, '*') {
+        double eval(double x, double y) {
+            return x * y;
+        }
+    },
+    DIVIDE(5, 4, '/') {
+        double eval(double x, double y) {
+            return y / x;
+        }
+    },
+    MODULE(5, 4, '%') {
+        double eval(double x, double y) {
+            return y % x;
+        }
+    },
+    LBRACKET(1, 6, '(') {
+        double eval(double x, double y) {
+            return 0;
+        }
+    },
+    RBRACKET(6, 1, ')') {
+        double eval(double x, double y) {
+            return 0;
+        }
+    },
+    EQUAL(0, 0, '=') {
+        double eval(double x, double y) {
+            return 0;
+        }
+    };
 
     abstract double eval(double x, double y);
+
     private final int inPrio;
     private final int outPrio;
     private final char op;
@@ -22,13 +55,15 @@ public enum ALUOperator {
         this.outPrio = outPrio;
         this.op = op;
     }
+
     int getPrio(boolean isInStack) {
         return isInStack ? inPrio : outPrio;
     }
 
     public static ALUOperator get(char op) {
-        for(ALUOperator a: values()) {
-            if(a.op == op) return a;
+        for (ALUOperator a : values()) {
+            if (a.op == op)
+                return a;
         }
         return null;
     }
@@ -38,49 +73,46 @@ public enum ALUOperator {
         char c;
         char prevC = '=';
         boolean isNeg = false;
-        for(i=0; i<expression.length(); i++) {
+        for (i = 0; i < expression.length(); i++) {
             c = expression.charAt(i);
-            if(get(c) != null) {
+            if (get(c) != null) {
                 ALUOperator o = get(c);
-                if(o == MINUS && get(prevC) != null && get(prevC) != RBRACKET) {
+                if (o == MINUS && get(prevC) != null && get(prevC) != RBRACKET) {
                     prevC = c;
                     isNeg = true;
                     continue;
-                }
-                else if(o == PLUS && get(prevC) != null && get(prevC) != RBRACKET) {
+                } else if (o == PLUS && get(prevC) != null && get(prevC) != RBRACKET) {
                     prevC = c;
                     isNeg = false;
                     continue;
-                }
-                else {
-                    while(operator.peek().getPrio(true) >= o.getPrio(false)) {
+                } else {
+                    while (operator.peek().getPrio(true) >= o.getPrio(false)) {
                         ALUOperator tmpO = operator.pop();
-                        if(tmpO != LBRACKET) {
+                        if (tmpO != LBRACKET) {
                             operand.push(tmpO.eval(operand.pop(), operand.pop()));
-                        }
-                        else break;
+                        } else
+                            break;
                     }
-                    if(o != RBRACKET) operator.push(o);
+                    if (o != RBRACKET)
+                        operator.push(o);
                 }
-            }
-            else if(c == ':') {
-                int j = i+1;
-                while(j < expression.length() && !expression.substring(j,j+1).matches("[a-zA-Z0-9_]")) {
+            } else if (c == ':') {
+                int j = i + 1;
+                while (j < expression.length() && !expression.substring(j, j + 1).matches("[a-zA-Z0-9_]")) {
                     j++;
                 }
-                String name = expression.substring(i,j);
-                String nameContent = Environment.nameMap.get(name).toString();
+                String name = expression.substring(i, j);
+                String nameContent = Environment.contextNameMap.peek().get(name);
                 operand.push(Double.parseDouble(nameContent));
-                i = j-1;
+                i = j - 1;
 
-            }
-            else {
-                int j = i+1;
-                while(j < expression.length() && !expression.substring(j,j+1).matches("[0-9\\.]")) {
+            } else {
+                int j = i + 1;
+                while (j < expression.length() && !expression.substring(j, j + 1).matches("[0-9\\.]")) {
                     j++;
                 }
                 double res = Double.parseDouble(expression.substring(i, j));
-                res = isNeg ? -res: res;
+                res = isNeg ? -res : res;
                 operand.push(res);
                 i = j - 1;
             }
@@ -88,7 +120,7 @@ public enum ALUOperator {
             isNeg = false;
         }
 
-        while(operator.size() > 1) {
+        while (operator.size() > 1) {
             operand.push(operator.pop().eval(operand.pop(), operand.pop()));
         }
 
