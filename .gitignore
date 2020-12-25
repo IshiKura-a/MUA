@@ -1,3 +1,5 @@
 *.class
 *.zip
 val
+bin/
+*.mua

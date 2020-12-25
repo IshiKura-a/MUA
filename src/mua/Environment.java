@@ -18,6 +18,8 @@ class Environment {
         contextCommandStack.add(new LinkedList<>());
         contextNameMap.add(new HashMap<>());
         contextInputPool.add(new LinkedList<>());
+
+        contextNameMap.get(0).put("pi", "3.14159");
     }
 
     private Environment() {
@@ -70,6 +72,10 @@ class Environment {
             return in.next();
         } else
             return contextInputPool.peek().pop();
+    }
+
+    public static boolean hasNext() {
+        return in.hasNext() || !contextInputPool.peek().isEmpty();
     }
 
     public static void allocateNewCommandStack() {

@@ -8,8 +8,10 @@ public class MuaList extends ArrayList<String> {
     @Override
     public String toString() {
         StringBuilder res = new StringBuilder();
+        if (this.size() == 0)
+            return "[]";
         res.append("[");
-        for (String s : super.toArray(new String[1])) {
+        for (String s : this) {
             res.append(s + " ");
         }
         res.replace(res.length() - 1, res.length(), "]");

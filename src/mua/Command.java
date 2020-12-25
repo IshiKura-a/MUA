@@ -1,9 +1,20 @@
 package mua;
 
+import java.util.Map.Entry;
+
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.util.HashMap;
 
 public enum Command {
     MAKE("make", 2) {
+        @Override
         public String apply() {
             String key = Environment.nextParameter();
             String value = Environment.nextParameter();
@@ -16,24 +27,31 @@ public enum Command {
         }
     },
     THING("thing", 1) {
+        @Override
         public String apply() {
             String name = Environment.nextParameter();
             return Environment.getNameContent(name);
         }
     },
     READ("read", 0) {
+        @Override
         public String apply() {
             return Environment.in.next();
         }
     },
     PRINT("print", 1) {
+        @Override
         public String apply() {
             String value = Environment.nextParameter();
-            System.out.println(value);
+            if (value.charAt(0) == '[' && value.charAt(value.length() - 1) == ']')
+                System.out.println(value.substring(1, value.length() - 1));
+            else
+                System.out.println(value);
             return value;
         }
     },
     ADD("add", 2) {
+        @Override
         public String apply() {
             double lVal = Double.parseDouble(Environment.nextParameter());
             double rVal = Double.parseDouble(Environment.nextParameter());
@@ -41,6 +59,7 @@ public enum Command {
         }
     },
     SUB("sub", 2) {
+        @Override
         public String apply() {
             double lVal = Double.parseDouble(Environment.nextParameter());
             double rVal = Double.parseDouble(Environment.nextParameter());
@@ -48,6 +67,7 @@ public enum Command {
         }
     },
     MUL("mul", 2) {
+        @Override
         public String apply() {
             double lVal = Double.parseDouble(Environment.nextParameter());
             double rVal = Double.parseDouble(Environment.nextParameter());
@@ -55,6 +75,7 @@ public enum Command {
         }
     },
     DIV("div", 2) {
+        @Override
         public String apply() {
             double lVal = Double.parseDouble(Environment.nextParameter());
             double rVal = Double.parseDouble(Environment.nextParameter());
@@ -62,6 +83,7 @@ public enum Command {
         }
     },
     MOD("mod", 2) {
+        @Override
         public String apply() {
             double lVal = Double.parseDouble(Environment.nextParameter());
             double rVal = Double.parseDouble(Environment.nextParameter());
@@ -69,6 +91,7 @@ public enum Command {
         }
     },
     ERASE("erase", 1) {
+        @Override
         public String apply() {
             String key = Environment.nextParameter();
             String res = null;
@@ -82,6 +105,7 @@ public enum Command {
         }
     },
     ISNAME("isname", 1) {
+        @Override
         public String apply() {
             String key = Environment.nextParameter();
             Boolean res = Environment.contextNameMap.peek().containsKey(key)
@@ -90,6 +114,7 @@ public enum Command {
         }
     },
     READLIST("readlist", 0) {
+        @Override
         public String apply() {
             MuaList list = new MuaList();
             list.readlist();
@@ -97,6 +122,7 @@ public enum Command {
         }
     },
     RUN("run", 1) {
+        @Override
         public String apply() {
             MuaList list = MuaList.parseMuaList(Environment.nextParameter());
 
@@ -117,6 +143,7 @@ public enum Command {
         }
     },
     EQ("eq", 2) {
+        @Override
         public String apply() {
             String lVal = Environment.nextParameter();
             String rVal = Environment.nextParameter();
@@ -130,6 +157,7 @@ public enum Command {
         }
     },
     GT("gt", 2) {
+        @Override
         public String apply() {
             String lVal = Environment.nextParameter();
             String rVal = Environment.nextParameter();
@@ -145,6 +173,7 @@ public enum Command {
         }
     },
     LT("lt", 2) {
+        @Override
         public String apply() {
             String lVal = Environment.nextParameter();
             String rVal = Environment.nextParameter();
@@ -159,6 +188,7 @@ public enum Command {
         }
     },
     AND("and", 2) {
+        @Override
         public String apply() {
             boolean lVal = Boolean.parseBoolean(Environment.nextParameter());
             boolean rVal = Boolean.parseBoolean(Environment.nextParameter());
@@ -166,6 +196,7 @@ public enum Command {
         }
     },
     OR("or", 2) {
+        @Override
         public String apply() {
             boolean lVal = Boolean.parseBoolean(Environment.nextParameter());
             boolean rVal = Boolean.parseBoolean(Environment.nextParameter());
@@ -173,12 +204,14 @@ public enum Command {
         }
     },
     NOT("not", 1) {
+        @Override
         public String apply() {
             boolean lVal = Boolean.parseBoolean(Environment.nextParameter());
             return Boolean.toString(!lVal);
         }
     },
     ISNUMBER("isnumber", 1) {
+        @Override
         public String apply() {
             try {
                 Double.parseDouble(Environment.nextParameter());
@@ -189,6 +222,7 @@ public enum Command {
         }
     },
     ISLIST("islist", 1) {
+        @Override
         public String apply() {
             try {
                 MuaList.parseMuaList(Environment.nextParameter());
@@ -199,6 +233,7 @@ public enum Command {
         }
     },
     ISBOOL("isbool", 1) {
+        @Override
         public String apply() {
             String val = Environment.nextParameter();
             val = val.toLowerCase();
@@ -206,6 +241,7 @@ public enum Command {
         }
     },
     ISEMPTY("isempty", 1) {
+        @Override
         public String apply() {
             String val = Environment.nextParameter();
             if (val.compareTo("") == 0 || val.compareTo("[]") == 0)
@@ -215,6 +251,7 @@ public enum Command {
         }
     },
     ISWORD("isword", 1) {
+        @Override
         public String apply() {
             String val = Environment.nextParameter();
             try {
@@ -231,6 +268,7 @@ public enum Command {
         }
     },
     IF("if", 3) {
+        @Override
         public String apply() {
             Boolean cond = Boolean.parseBoolean(Environment.nextParameter());
             MuaList trueList = MuaList.parseMuaList(Environment.nextParameter());
@@ -264,6 +302,7 @@ public enum Command {
         }
     },
     FUNC("func", 0) {
+        @Override
         public String apply() {
             MuaList funcList = MuaList.parseMuaList(Environment.nextParameter());
             if (funcList.size() != 2)
@@ -314,6 +353,7 @@ public enum Command {
         }
     },
     RETURN("return", 1) {
+        @Override
         public String apply() {
             String res = Environment.nextParameter();
             Environment.clearCurInputPool();
@@ -321,6 +361,7 @@ public enum Command {
         }
     },
     EXPORT("export", 1) {
+        @Override
         public String apply() {
             String key = Environment.nextParameter();
             if (Environment.contextNameMap.peek().get(key) == null)
@@ -329,6 +370,211 @@ public enum Command {
             String val = Environment.contextNameMap.peek().get(key);
             Environment.contextNameMap.getLast().put(key, val);
             return val;
+        }
+    },
+    WORD("word", 2) {
+        @Override
+        public String apply() {
+            String lVal = Environment.nextParameter();
+            String rVal = Environment.nextParameter();
+            return lVal + rVal;
+        }
+    },
+    SENTENCE("sentence", 2) {
+        @Override
+        public String apply() {
+            String lVal = Environment.nextParameter();
+            String rVal = Environment.nextParameter();
+
+            MuaList resList = new MuaList();
+
+            try {
+                MuaList lList = MuaList.parseMuaList(lVal);
+                for (String s : lList) {
+                    resList.add(s);
+                }
+            } catch (MuaListFormatException mfe) {
+                resList.add(lVal);
+            }
+
+            try {
+                MuaList rList = MuaList.parseMuaList(rVal);
+                for (String s : rList) {
+                    resList.add(s);
+                }
+            } catch (MuaListFormatException mfe) {
+                resList.add(rVal);
+            }
+
+            return resList.toString();
+        }
+    },
+    LIST("list", 2) {
+        @Override
+        public String apply() {
+            String lVal = Environment.nextParameter();
+            String rVal = Environment.nextParameter();
+
+            MuaList resList = new MuaList();
+            resList.add(lVal);
+            resList.add(rVal);
+
+            return resList.toString();
+        }
+    },
+    JOIN("join", 2) {
+        @Override
+        public String apply() {
+            MuaList list = MuaList.parseMuaList(Environment.nextParameter());
+            String val = Environment.nextParameter();
+            list.add(val);
+            return list.toString();
+        }
+    },
+    FIRST("first", 1) {
+        @Override
+        public String apply() {
+            String val = Environment.nextParameter();
+            try {
+                MuaList list = MuaList.parseMuaList(val);
+                return list.get(0);
+            } catch (MuaListFormatException e) {
+                return val.substring(0, 1);
+            }
+        }
+    },
+    LAST("last", 1) {
+        @Override
+        public String apply() {
+            String val = Environment.nextParameter();
+            try {
+                MuaList list = MuaList.parseMuaList(val);
+                return list.get(list.size() - 1);
+            } catch (MuaListFormatException e) {
+                return val.substring(val.length() - 1, val.length());
+            }
+        }
+    },
+    BUTFIRST("butfirst", 1) {
+        @Override
+        public String apply() {
+            String val = Environment.nextParameter();
+            try {
+                MuaList list = MuaList.parseMuaList(val);
+                list.remove(0);
+                return list.toString();
+            } catch (MuaListFormatException e) {
+                return val.substring(1, val.length());
+            }
+        }
+    },
+    BUTLAST("butlast", 1) {
+        @Override
+        public String apply() {
+            String val = Environment.nextParameter();
+            try {
+                MuaList list = MuaList.parseMuaList(val);
+                list.remove(list.size() - 1);
+                return list.toString();
+            } catch (MuaListFormatException e) {
+                return val.substring(0, val.length() - 1);
+            }
+        }
+    },
+    RANDOM("random", 1) {
+        @Override
+        public String apply() {
+            double val = Double.parseDouble(Environment.nextParameter());
+            return "" + Math.random() * val;
+        }
+    },
+    INT("int", 1) {
+        @Override
+        public String apply() {
+            double val = Double.parseDouble(Environment.nextParameter());
+            return "" + (int) Math.floor(val);
+        }
+    },
+    SQRT("sqrt", 1) {
+        @Override
+        public String apply() {
+            double val = Double.parseDouble(Environment.nextParameter());
+            return "" + Math.sqrt(val);
+        }
+    },
+    SAVE("save", 1) {
+        @Override
+        public String apply() {
+            String file = Environment.nextParameter();
+            try (PrintWriter pw = new PrintWriter(
+                    new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file))), true)) {
+                for (Entry<String, String> pair : Environment.contextNameMap.peek().entrySet()) {
+                    pw.write("make\n\"" + pair.getKey() + "\n");
+                    String val = pair.getValue();
+                    try {
+                        MuaList.parseMuaList(val);
+                        pw.write(val + "\n");
+                        continue;
+                    } catch (MuaListFormatException mfe) {
+                        // Do nothing
+                    }
+
+                    try {
+                        Double.parseDouble(val);
+                        pw.write(val + "\n");
+                        continue;
+                    } catch (NumberFormatException nfe) {
+                        // Do nothing
+                    }
+
+                    try {
+                        Boolean.parseBoolean(val);
+                        pw.write(val + "\n");
+                    } catch (NumberFormatException nfe) {
+                        pw.write("\"" + val + "\n");
+                    }
+                }
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            }
+            return file;
+        }
+    },
+    LOAD("load", 1) {
+        @Override
+        public String apply() {
+            String file = Environment.nextParameter();
+            try (BufferedReader br = new BufferedReader((new InputStreamReader(new FileInputStream(file))))) {
+                while (true) {
+                    String line = br.readLine();
+                    if (line == null)
+                        break;
+                    for (String s : line.split(" ")) {
+                        Environment.push2CurInputPool(s);
+                    }
+
+                }
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            }
+            return TRUESTRING;
+        }
+    },
+    ERALL("erall", 0) {
+        @Override
+        public String apply() {
+            Environment.contextNameMap.peek().clear();
+            return TRUESTRING;
+        }
+    },
+    POALL("poall", 0) {
+        @Override
+        public String apply() {
+            MuaList nameList = new MuaList();
+            for (String s : Environment.contextNameMap.peek().keySet()) {
+                nameList.add(s);
+            }
+            return nameList.toString();
         }
     };
 
